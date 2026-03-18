@@ -1,0 +1,32 @@
+# Trak ignored files
+
+# generated binaries
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Test binary, built with `go test -c`
+*.test
+
+# 99 log folder
+tmp/
+
+# IDE files
+.vscode
+.idea/
+
+# env files
+.env*
+
+# config files
+config.y*ml
+
+# local images folder
+
+# macos files
+.DS_Store
+

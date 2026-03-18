@@ -1,0 +1,88 @@
+# Contributing to track
+ 
+Thanks for your interest in contributing! track is a small, focused tool and we want to keep it that way — contributions that add complexity without clear user value are unlikely to be merged. When in doubt, open an issue first.
+ 
+---
+ 
+## Getting started
+ 
+**Requirements**
+- Go 1.22+
+- macOS or Linux
+- `make`
+ 
+```bash
+git clone https://github.com/CRSylar/track
+cd track
+make dev       # builds native binaries into bin/ without cross-compiling
+```
+ 
+The two binaries are `bin/track` (CLI) and `bin/trackd` (daemon). You can test them directly from `bin/` without installing.
+ 
+**Project layout**
+ 
+```
+track/
+├── cmd/
+│   ├── track/      CLI entrypoint
+│   └── trackd/     Daemon entrypoint
+├── internal/
+│   ├── daemon/     State, timer logic, unix socket server
+│   ├── client/     Socket client used by the CLI
+│   └── protocol/   Shared JSON message types
+├── scripts/
+│   └── raycast/    Raycast script commands (macOS)
+└── Makefile
+```
+ 
+---
+ 
+## Platform support
+ 
+| Platform | Status | Notes |
+|---|---|---|
+| macOS arm64 (Apple Silicon) | ✅ Supported | Primary target |
+| macOS amd64 (Intel) | ✅ Should work | Untested |
+| Linux arm64 | 🔜 Planned v0.2 | |
+| Linux amd64 | 🔜 Planned v0.2 | |
+| Windows | ❌ Not planned | Unix sockets only |
+ 
+For Linux contributions, the only platform-specific piece is the hotkey integration — Raycast is macOS-only. The equivalent on Linux is **rofi** (X11) or **wofi** (Wayland). A `scripts/rofi/` directory following the same pattern as `scripts/raycast/` is the right approach.
+ 
+---
+ 
+## Making changes
+ 
+- **Keep the binary small and dependency-free.** The Go standard library covers everything we need. Do not add third-party dependencies without a strong reason.
+- **No breaking changes to the CLI interface** without a major version bump — people script against `track switch`, `track next`, etc.
+- **The protocol between `track` and `trackd`** lives in `internal/protocol/`. If you add a command, add it there first, then wire it through the server dispatcher and the CLI.
+- **All time math belongs in `internal/daemon/state.go`**, not scattered across the CLI.
+ 
+---
+ 
+## Submitting a pull request
+ 
+1. Fork the repo and create a branch: `git checkout -b my-feature`
+2. Make your changes
+3. Run `make build` and verify both binaries compile cleanly for all targets
+4. Update `README.md` if you've changed or added any commands
+5. Open a PR with a clear description of what and why
+ 
+There are no automated tests yet (planned for v0.3). Manual testing steps in your PR description are appreciated.
+ 
+---
+ 
+## Reporting bugs
+ 
+Open a GitHub issue with:
+- Your OS and architecture
+- The `track` version (`track --version`, once that's implemented)
+- The exact command you ran and the output you got
+- Whether `trackd` was running (`pgrep trackd`)
+ 
+---
+ 
+## Roadmap and priorities
+ 
+See the roadmap in [README.md](README.md). If you want to work on a roadmap item, comment on the relevant issue (or open one) so we can coordinate before you invest time in it.
+ 
