@@ -6,10 +6,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/CRSylar/trak/internal/client"
 	"github.com/CRSylar/trak/internal/protocol"
 )
+
+// version is set at build time via -ldflags "-X main.version=v0.1.0"
+var version = "dev"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -20,6 +24,10 @@ func main() {
 	cmd := os.Args[1]
 
 	switch cmd {
+
+	case "version", "--version", "-v":
+		fmt.Printf("track %s\n", version)
+
 	case "start":
 		startWorkday()
 
@@ -108,9 +116,8 @@ func startWorkday() {
 		if sendErr == nil {
 			break
 		}
-		// Small sleep via a busy wait (no time import needed since we import it in state.go)
-		// Using exec to avoid importing time here — actually let's just import it
-		_ = exec.Command("sleep", "0.1").Run()
+		// Small sleep via a busy wait 
+		time.Sleep(time.Millisecond * 100)
 	}
 	dieOnErr(sendErr)
 	fmt.Println(msg)
@@ -150,7 +157,7 @@ func requireArg(cmd, argName string) {
 }
 
 func printUsage() {
-	fmt.Print(`trak — WorkDay time tracker
+	fmt.Printf(`trak — WorkDay time tracker (%s)
 
 USAGE:
   trak start                  Start the workday (launches background daemon)
@@ -168,5 +175,5 @@ NOTES:
   'rest' is a built-in project always available for breaks.
   Project registrations are saved to ~/.trak/projects.json.
   Timer state lives only in memory and resets at 'trak end'.
-`)
+`, version)
 }
