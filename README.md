@@ -119,7 +119,6 @@ Total: 7h 42m  (09:00 → 16:42)
  
 | Milestone | Highlights |
 |---|---|
-| **v0.2** | Linux support (amd64 + arm64), CI build matrix |
 | **v0.3** | JSON session persistence, crash recovery, `trak edit` |
 | **v0.4** | `trak report [date]`, weekly summary, CSV export |
 | **v1.0** | Idle detection, shell prompt integration, Homebrew tap |
