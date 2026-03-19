@@ -47,7 +47,7 @@ jobs:
 
       # ---------------------------------------------------------------
       # Cross-compile all target platforms.
-      # Output format: track-<os>-<arch>[.tar.gz]
+      # Output format: trak-<os>-<arch>[.tar.gz]
       # ---------------------------------------------------------------
       - name: Build binaries
         run: |
@@ -64,23 +64,26 @@ jobs:
           for target in "${targets[@]}"; do
             OS=$(echo $target | cut -d' ' -f1)
             ARCH=$(echo $target | cut -d' ' -f2)
-            OUT="dist/track-${OS}-${ARCH}"
+            OUT="dist/trak-${OS}-${ARCH}"
 
             echo "Building $OS/$ARCH..."
 
+            # Create output directory explicitly before building into it
+            mkdir -p "${OUT}"
+
             GOOS=$OS GOARCH=$ARCH go build \
               -ldflags="-s -w -X main.version=${VERSION}" \
-              -o "${OUT}/track" \
+              -o "${OUT}/trak" \
               ./cmd/trak
 
             GOOS=$OS GOARCH=$ARCH go build \
               -ldflags="-s -w -X main.version=${VERSION}" \
-              -o "${OUT}/trackd" \
+              -o "${OUT}/trakd" \
               ./cmd/trakd
 
             # Package as tar.gz
-            tar -czf "dist/track-${OS}-${ARCH}.tar.gz" -C dist "trak-${OS}-${ARCH}"
-            echo "  → dist/track-${OS}-${ARCH}.tar.gz"
+            tar -czf "dist/trak-${OS}-${ARCH}.tar.gz" -C dist "trak-${OS}-${ARCH}"
+            echo "  → dist/trak-${OS}-${ARCH}.tar.gz"
           done
 
       - name: Generate checksums
