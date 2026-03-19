@@ -1,6 +1,6 @@
 .PHONY: build install clean
 
-BINARY_DIR := $(HOME)/bin
+BINARY_DIR := $(HOME)/.local/bin
 GOOS := darwin
 GOARCH := arm64
 
