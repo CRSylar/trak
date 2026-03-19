@@ -1,6 +1,6 @@
-# Contributing to track
+# Contributing to trak
  
-Thanks for your interest in contributing! track is a small, focused tool and we want to keep it that way — contributions that add complexity without clear user value are unlikely to be merged. When in doubt, open an issue first.
+Thanks for your interest in contributing! trak is a small, focused tool and we want to keep it that way — contributions that add complexity without clear user value are unlikely to be merged. When in doubt, open an issue first.
  
 ---
  
@@ -12,20 +12,20 @@ Thanks for your interest in contributing! track is a small, focused tool and we 
 - `make`
  
 ```bash
-git clone https://github.com/CRSylar/track
-cd track
+git clone https://github.com/CRSylar/trak
+cd trak
 make dev       # builds native binaries into bin/ without cross-compiling
 ```
  
-The two binaries are `bin/track` (CLI) and `bin/trackd` (daemon). You can test them directly from `bin/` without installing.
+The two binaries are `bin/trak` (CLI) and `bin/trakd` (daemon). You can test them directly from `bin/` without installing.
  
 **Project layout**
  
 ```
-track/
+trak/
 ├── cmd/
-│   ├── track/      CLI entrypoint
-│   └── trackd/     Daemon entrypoint
+│   ├── trak/      CLI entrypoint
+│   └── trakd/     Daemon entrypoint
 ├── internal/
 │   ├── daemon/     State, timer logic, unix socket server
 │   ├── client/     Socket client used by the CLI
@@ -54,8 +54,8 @@ For Linux contributions, the only platform-specific piece is the hotkey integrat
 ## Making changes
  
 - **Keep the binary small and dependency-free.** The Go standard library covers everything we need. Do not add third-party dependencies without a strong reason.
-- **No breaking changes to the CLI interface** without a major version bump — people script against `track switch`, `track next`, etc.
-- **The protocol between `track` and `trackd`** lives in `internal/protocol/`. If you add a command, add it there first, then wire it through the server dispatcher and the CLI.
+- **No breaking changes to the CLI interface** without a major version bump — people script against `trak switch`, `trak next`, etc.
+- **The protocol between `trak` and `trakd`** lives in `internal/protocol/`. If you add a command, add it there first, then wire it through the server dispatcher and the CLI.
 - **All time math belongs in `internal/daemon/state.go`**, not scattered across the CLI.
  
 ---
@@ -76,9 +76,9 @@ There are no automated tests yet (planned for v0.3). Manual testing steps in you
  
 Open a GitHub issue with:
 - Your OS and architecture
-- The `track` version (`track --version`, once that's implemented)
+- The `trak` version (`trak --version`, once that's implemented)
 - The exact command you ran and the output you got
-- Whether `trackd` was running (`pgrep trackd`)
+- Whether `trakd` was running (`pgrep trakd`)
  
 ---
  

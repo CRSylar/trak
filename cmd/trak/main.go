@@ -26,7 +26,7 @@ func main() {
 	switch cmd {
 
 	case "version", "--version", "-v":
-		fmt.Printf("track %s\n", version)
+		fmt.Printf("trak %s\n", version)
 
 	case "start":
 		startWorkday()
@@ -157,7 +157,7 @@ func requireArg(cmd, argName string) {
 }
 
 func printUsage() {
-	fmt.Printf(`trak — WorkDay time tracker (%s)
+	fmt.Printf(`trak — WorkDay time traker (%s)
 
 USAGE:
   trak start                  Start the workday (launches background daemon)

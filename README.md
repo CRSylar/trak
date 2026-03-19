@@ -1,6 +1,6 @@
-# track
+# trak
  
-A minimal CLI time tracker for freelancers. Register projects, switch between them instantly via a hotkey, and get a clean end-of-day report.
+A minimal CLI time traker for freelancers. Register projects, switch between them instantly via a hotkey, and get a clean end-of-day report.
  
 Built with Go. No cloud, no accounts, no bloat — just a fast local daemon and two keystrokes.
  
@@ -9,11 +9,11 @@ Built with Go. No cloud, no accounts, no bloat — just a fast local daemon and 
 ## How it works
  
 ```
-CLI (track) ──── unix socket ────► Daemon (trackd)
+CLI (trak) ──── unix socket ────► Daemon (trakd)
                                      holds session state in memory
 ```
  
-`trackd` runs in the background for the duration of your workday. `track` is the CLI you interact with — or don't, once your hotkeys are set up. Project registrations are persisted to `~/.track/projects.json`.
+`trakd` runs in the background for the duration of your workday. `trak` is the CLI you interact with — or don't, once your hotkeys are set up. Project registrations are persisted to `~/.trak/projects.json`.
  
 ---
  
@@ -24,8 +24,8 @@ CLI (track) ──── unix socket ────► Daemon (trackd)
 > Linux support is planned for v0.2. See [CONTRIBUTING.md](CONTRIBUTING.md).
  
 ```bash
-git clone https://github.com/you/track
-cd track
+git clone https://github.com/you/trak
+cd trak
 make install
 ```
  
@@ -53,23 +53,23 @@ That's it. You'll never need to touch the mouse to switch projects.
  
 ```bash
 # Morning — start the workday
-track start
+trak start
  
 # First time only — register your projects (saved permanently)
-track register client-alpha
-track register client-beta
-track register internal
+trak register client-alpha
+trak register client-beta
+trak register internal
  
 # Switch projects
-track next          # cycles: client-alpha → client-beta → internal → client-alpha
-track rest          # jump to rest immediately
-track switch <name> # go to a specific project by name
+trak next          # cycles: client-alpha → client-beta → internal → client-alpha
+trak rest          # jump to rest immediately
+trak switch <name> # go to a specific project by name
  
 # Check where you are
-track status
+trak status
  
 # Evening — end the workday and print the report
-track end
+trak end
 ```
  
 ### End-of-day report
@@ -94,24 +94,24 @@ Total: 7h 42m  (09:00 → 16:42)
  
 | Command | Description |
 |---|---|
-| `track start` | Start workday, launch daemon |
-| `track end` | End workday, print report, stop daemon |
-| `track next` | Cycle to the next work project (skips rest) |
-| `track rest` | Switch to rest immediately |
-| `track switch <name>` | Switch to a specific project |
-| `track status` | Current project + elapsed time |
-| `track projects` | List all registered projects |
-| `track register <name>` | Register a new project |
-| `track unregister <name>` | Remove a project |
+| `trak start` | Start workday, launch daemon |
+| `trak end` | End workday, print report, stop daemon |
+| `trak next` | Cycle to the next work project (skips rest) |
+| `trak rest` | Switch to rest immediately |
+| `trak switch <name>` | Switch to a specific project |
+| `trak status` | Current project + elapsed time |
+| `trak projects` | List all registered projects |
+| `trak register <name>` | Register a new project |
+| `trak unregister <name>` | Remove a project |
  
 ---
  
 ## Notes
  
 - `rest` is a built-in project — always available, cannot be unregistered
-- Session state lives **in memory only** and resets on `track end` — persistence is planned for v0.3
-- If the daemon crashes or you need to force-stop it: `pkill trackd`
-- The `track next` cycle order is alphabetical and excludes `rest`
+- Session state lives **in memory only** and resets on `trak end` — persistence is planned for v0.3
+- If the daemon crashes or you need to force-stop it: `pkill trakd`
+- The `trak next` cycle order is alphabetical and excludes `rest`
  
 ---
  
@@ -120,8 +120,8 @@ Total: 7h 42m  (09:00 → 16:42)
 | Milestone | Highlights |
 |---|---|
 | **v0.2** | Linux support (amd64 + arm64), CI build matrix |
-| **v0.3** | JSON session persistence, crash recovery, `track edit` |
-| **v0.4** | `track report [date]`, weekly summary, CSV export |
+| **v0.3** | JSON session persistence, crash recovery, `trak edit` |
+| **v0.4** | `trak report [date]`, weekly summary, CSV export |
 | **v1.0** | Idle detection, shell prompt integration, Homebrew tap |
  
 ---

@@ -71,15 +71,15 @@ jobs:
             GOOS=$OS GOARCH=$ARCH go build \
               -ldflags="-s -w -X main.version=${VERSION}" \
               -o "${OUT}/track" \
-              ./cmd/track
+              ./cmd/trak
 
             GOOS=$OS GOARCH=$ARCH go build \
               -ldflags="-s -w -X main.version=${VERSION}" \
               -o "${OUT}/trackd" \
-              ./cmd/trackd
+              ./cmd/trakd
 
             # Package as tar.gz
-            tar -czf "dist/track-${OS}-${ARCH}.tar.gz" -C dist "track-${OS}-${ARCH}"
+            tar -czf "dist/track-${OS}-${ARCH}.tar.gz" -C dist "trak-${OS}-${ARCH}"
             echo "  → dist/track-${OS}-${ARCH}.tar.gz"
           done
 

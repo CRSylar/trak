@@ -34,8 +34,8 @@ jobs:
 
       - name: Build
         run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build ./cmd/track
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build ./cmd/trackd
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build ./cmd/trak
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build ./cmd/trakd
 
       - name: Vet
         run: go vet ./...
