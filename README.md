@@ -32,7 +32,7 @@ mv trak-darwin-arm64/trakd ~/.local/bin/trakd
 
 ### Option 2 — Build from source
 
-**Requirements:** Go 1.22+
+**Requirements:** Go 1.26+
 
 ```bash
 git clone https://github.com/CRSylar/trak
