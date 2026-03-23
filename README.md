@@ -197,8 +197,8 @@ Total: 7h 42m  (09:00 → 16:42)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions welcome.
+See [Contributing.md](Contributing.md). All contributions welcome.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE.md).
