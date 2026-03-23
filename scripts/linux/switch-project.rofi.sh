@@ -8,11 +8,23 @@
 #
 # Dependencies: trak, rofi, notify-send (libnotify)
 
-export PATH="$HOME/bin:$HOME/.local/bin:$HOME/go/bin:/urs/local/bin:/opt/homebrew/bin:$PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
 
-PROJECTS_JSON=$(trak projects --names 2>/dev/null)
+if ! command -v trak >/dev/null 2>&1; then
+  notify-send --icon=dialog-error --expire-time=3000 "trak error" \
+    "trak command not found — ensure 'trak' is installed and in your PATH"
+  exit 1
+fi
 
-if [ $? -ne 0 ] || [ -z "$PROJECTS_JSON" ]; then
+PROJECTS_JSON=$(trak projects --names 2>&1)
+PROJECTS_EXIT_CODE=$?
+
+if [ $PROJECTS_EXIT_CODE -ne 0 ]; then
+  notify-send --icon=dialog-error --expire-time=3000 "trak error" "$PROJECTS_JSON"
+  exit 1
+fi
+
+if [ -z "$PROJECTS_JSON" ]; then
   notify-send --icon=dialog-error --expire-time=3000 "trak error" \
     "Daemon not running — start your workday with 'trak start'"
   exit 1

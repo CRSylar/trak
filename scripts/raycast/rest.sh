@@ -9,7 +9,7 @@
 # @raycast.icon 🛋️
 # @raycast.packageName WorkDay
 
-export PATH="$HOME/bin:$HOME/.local/bin:$HOME/go/bin:/urs/local/bin:/opt/homebrew/bin:$PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
 
 RESULT=$(trak rest 2>&1)
 if [ $? -eq 0 ]; then
