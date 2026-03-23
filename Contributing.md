@@ -7,7 +7,7 @@ Thanks for your interest in contributing! trak is a small, focused tool and we w
 ## Getting started
  
 **Requirements**
-- Go 1.22+
+- Go 1.26+
 - macOS or Linux
 - `make`
  

@@ -1,11 +1,11 @@
 .PHONY: build install clean
 
-BINARY_DIR := $(HOME)/bin
-GOOS := darwin
-GOARCH := arm64
+BINARY_DIR := $(HOME)/.local/bin
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
 
 build:
-	@echo "Building trak and trakd for Apple Silicon..."
+	@echo "Building trak and trakd for $(GOOS)/$(GOARCH)..."
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o bin/trak  ./cmd/trak
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o bin/trakd ./cmd/trakd
 	@echo "Done → bin/trak  bin/trakd"
