@@ -90,17 +90,17 @@ Then bind hotkeys in your WM/DE settings pointing to each script:
 | `switch-project.rofi.sh` | `Super+Space` | Open rofi picker |
 | `switch-project.wofi.sh` | `Super+Space` | Open wofi picker (Wayland) |
 
-**Dependencies:** `notify-send` for toast notifications, plus `rofi` or `wofi` for the picker:
+**Dependencies:** `python3` (for JSON parsing in the scripts), `notify-send` for toast notifications, plus `rofi` or `wofi` for the picker:
 
 ```bash
 # Debian / Ubuntu
-sudo apt install libnotify-bin rofi   # or wofi
+sudo apt install python3 libnotify-bin rofi   # or wofi
 
 # Arch
-sudo pacman -S libnotify rofi         # or wofi
+sudo pacman -S python libnotify rofi         # or wofi
 
 # Fedora
-sudo dnf install libnotify rofi       # or wofi
+sudo dnf install python3 libnotify rofi      # or wofi
 ```
 
 **WM-specific examples:**
