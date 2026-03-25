@@ -2,15 +2,19 @@ package protocol
 
 // Command types sent from CLI to daemon
 const (
-	CmdStart      = "start"
-	CmdEnd        = "end"
-	CmdSwitch     = "switch"
-	CmdNext       = "next"
-	CmdRest       = "rest"
-	CmdStatus     = "status"
-	CmdProjects   = "projects"
-	CmdRegister   = "register"
-	CmdUnregister = "unregister"
+	CmdStart           = "start"
+	CmdEnd             = "end"
+	CmdSwitch          = "switch"
+	CmdNext            = "next"
+	CmdRest            = "rest"
+	CmdEdit            = "edit"
+	CmdStatus          = "status"
+	CmdProjects        = "projects"
+	CmdRegister        = "register"
+	CmdUnregister      = "unregister"
+	CmdCheckResume     = "check-resume"
+	CmdResume          = "resume"
+	CmdDiscardAndStart = "discard-and-start"
 )
 
 // Request is the message sent from CLI to daemon

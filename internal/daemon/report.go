@@ -5,9 +5,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/CRSylar/trak/internal/session"
 )
 
-func buildReport(dayStart, dayEnd time.Time, segments []Segment) string {
+func buildReport(dayStart, dayEnd time.Time, segments []session.Segment) string {
 	// Accumulate time per project
 	totals := make(map[string]time.Duration)
 	for _, seg := range segments {
