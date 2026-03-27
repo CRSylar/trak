@@ -176,6 +176,10 @@ func ValidateSession(s Session) error {
 			if seg.Start.IsZero() {
 				return fmt.Errorf("invalid starting time for segment at index %d", idx)
 			}
+
+			if seg.End.IsZero() || seg.End.Before(seg.Start) {
+				return fmt.Errorf("invalid ending time for segment at index %d", idx)
+			}
 		}
 	}
 

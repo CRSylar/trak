@@ -186,7 +186,7 @@ func (s *State) DiscardAndStart(oldPath string) (string, error) {
 		return "", err
 	}
 
-	if err := session.ValidateSession(*old); err == nil {
+	if err := session.ValidateSession(*old); err != nil {
 		return "", fmt.Errorf("old session is not valid, discardAndRestart operation will be aborted; error: %w", err)
 	}
 
