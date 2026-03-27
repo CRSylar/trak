@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -145,8 +146,39 @@ func FindActiveToday(sessionsDir string) (*Session, string, error) {
 }
 
 // Close marks the session as closed and saves it.
-func Close(s *Session, now time.Time, path string) error {
+func Close(s *Session, path string) error {
 	s.Closed = true
 
 	return Save(s, path)
+}
+
+func ValidateSession(s Session) error {
+	if s.Closed == true {
+		return errors.New("session already closed")
+	}
+
+	if s.SegmentStart.IsZero() {
+		return errors.New("invalid segment start timestamp, zero value not allowed")
+	}
+	if s.ActiveProject == "" {
+		return errors.New("invalid active project in session")
+	}
+
+	if s.DayStart.IsZero() {
+		return errors.New("invalid session starting date, zero value is not allowed")
+	}
+
+	if len(s.Segments) > 0 {
+		for idx, seg := range s.Segments {
+			if seg.Project == "" {
+				return fmt.Errorf("invalid segment in session, segment at position %d has empty project name", idx)
+			}
+			if seg.Start.IsZero() {
+				return fmt.Errorf("invalid starting time for segment at index %d", idx)
+			}
+		}
+	}
+
+	return nil
+
 }

@@ -106,23 +106,29 @@ func startWorkday() {
 	daemonCmd := exec.Command(daemonPath)
 	daemonCmd.Stdout = os.Stdout
 	daemonCmd.Stderr = os.Stderr
-	if err := daemonCmd.Start(); err != nil {
-		fmt.Fprintf(os.Stderr, "trak: failed to start daemon: %v\n", err)
-		os.Exit(1)
-	}
 
-	// Wait until the daemon socket is ready
-	for range 9 {
-		_, sendErr := client.Send(protocol.CmdProjects, "")
-		if sendErr == nil {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
+	// send a command to the socket to sense if a daemon instance is already running
 	_, sendErr := client.Send(protocol.CmdProjects, "")
 	if sendErr != nil {
-		fmt.Fprintf(os.Stderr, "trak: failed to connect to daemon, use `pkill trakd` and retry ")
-		os.Exit(1)
+		// failed to send command, start a new trakd instance
+		if err := daemonCmd.Start(); err != nil {
+			fmt.Fprintf(os.Stderr, "trak: failed to start daemon: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Wait until the daemon socket is ready
+		for range 9 {
+			_, sendErr := client.Send(protocol.CmdProjects, "")
+			if sendErr == nil {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		_, sendErr = client.Send(protocol.CmdProjects, "")
+		if sendErr != nil {
+			fmt.Fprintf(os.Stderr, "trak: failed to connect to daemon, use `pkill trakd` and retry ")
+			os.Exit(1)
+		}
 	}
 
 	// Check for an unfinished session from today

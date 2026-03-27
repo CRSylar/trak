@@ -165,6 +165,10 @@ func (s *State) Resume(sessPath string) (string, error) {
 		return "", err
 	}
 
+	if err := session.ValidateSession(*existing); err != nil {
+		return "", fmt.Errorf("cannot resume session at %q, file contains invalid session data; errror: %w", sessPath, err)
+	}
+
 	s.running = true
 	s.sess = existing
 	s.sessPath = sessPath
@@ -187,6 +191,11 @@ func (s *State) DiscardAndStart(oldPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if err := session.ValidateSession(*old); err == nil {
+		return "", fmt.Errorf("old session is not valid, discardAndRestart operation will be aborted; error: %w", err)
+	}
+
 	now := time.Now()
 	activeBackup := old.ActiveProject
 	segStartBackup := old.SegmentStart
@@ -199,7 +208,7 @@ func (s *State) DiscardAndStart(oldPath string) (string, error) {
 	old.ActiveProject = ""
 	old.SegmentStart = time.Time{}
 
-	if err := session.Close(old, now, oldPath); err != nil {
+	if err := session.Close(old, oldPath); err != nil {
 		old.ActiveProject = activeBackup
 		old.SegmentStart = segStartBackup
 		old.Segments = old.Segments[:len(old.Segments)-1]
@@ -263,7 +272,7 @@ func (s *State) End() (string, error) {
 	s.sess.ActiveProject = ""
 	s.sess.SegmentStart = time.Time{}
 
-	err := session.Close(s.sess, now, s.sessPath)
+	err := session.Close(s.sess, s.sessPath)
 	if err != nil {
 		s.sess.ActiveProject = activeBackup
 		s.sess.SegmentStart = segStartBackup
