@@ -26,8 +26,8 @@ type Request struct {
 // Response is what the daemon sends back
 type Response struct {
 	OK      bool   `json:"ok"`
-	Message string `json:"message"`          // human-readable output to print
-	Data    any    `json:"data,omitempty"`   // optional structured data
+	Message string `json:"message"`        // human-readable output to print
+	Data    any    `json:"data,omitempty"` // optional structured data
 }
 
 // SocketPath is the unix socket location

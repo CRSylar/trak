@@ -100,9 +100,9 @@ func buildReport(dayStart, dayEnd time.Time, segments []session.Segment) string 
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "\nWorkDay ended — %s\n", dayEnd.Format("02 Jan 2006"))
 	fmt.Fprintf(&sb, "Total: %s  (%s → %s)\n\n",
-	formatDuration(totalDay),
-	dayStart.Format("15:04"),
-	dayEnd.Format("15:04"))
+		formatDuration(totalDay),
+		dayStart.Format("15:04"),
+		dayEnd.Format("15:04"))
 	sb.WriteString(top + "\n")
 	sb.WriteString(fmtRow("Project", "Time", "%") + "\n")
 	sb.WriteString(mid + "\n")

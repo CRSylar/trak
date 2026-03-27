@@ -104,8 +104,8 @@ func startWorkday() {
 	}
 
 	daemonCmd := exec.Command(daemonPath)
-	daemonCmd.Stdout = nil
-	daemonCmd.Stderr = nil
+	daemonCmd.Stdout = os.Stdout
+	daemonCmd.Stderr = os.Stderr
 	if err := daemonCmd.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "trak: failed to start daemon: %v\n", err)
 		os.Exit(1)

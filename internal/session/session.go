@@ -107,8 +107,6 @@ func Save(s *Session, path string) error {
 	return nil
 }
 
-
-
 // FindActiveToday looks for an unclosed session file for today in sessionsDir.
 // Returns the session and its path, or nil if none found.
 func FindActiveToday(sessionsDir string) (*Session, string, error) {
@@ -146,9 +144,9 @@ func FindActiveToday(sessionsDir string) (*Session, string, error) {
 	return s, path, nil
 }
 
-// Close marks the session as closed, appends the final segment, and saves
+// Close marks the session as closed and saves it.
 func Close(s *Session, now time.Time, path string) error {
 	s.Closed = true
 
-return Save(s, path)
+	return Save(s, path)
 }
