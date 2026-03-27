@@ -75,11 +75,11 @@ func (s *State) loadProjects() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("loadProjects: cannot read file %s: %w", s.projectsPath, err)
 	}
 	var cfg projectConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return err
+		return fmt.Errorf("loadProjects: cannot Unmarshal data in file %s: %w", s.projectsPath, err)
 	}
 	for _, p := range cfg.Projects {
 		s.registeredProjects[p] = true
@@ -135,6 +135,9 @@ func (s *State) CheckResume() (*protocol.ResumeCandidate, error) {
 	}
 	if existing == nil {
 		return nil, nil
+	}
+	if err := session.ValidateSession(*existing); err != nil {
+		return nil, err
 	}
 
 	return &protocol.ResumeCandidate{

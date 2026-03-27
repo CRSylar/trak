@@ -26,7 +26,7 @@ type Request struct {
 // Response is what the daemon sends back
 type Response struct {
 	OK      bool   `json:"ok"`
-	Message string `json:"message"`        // human-readable output to print
+	Message string `json:"message"`        // output to print
 	Data    any    `json:"data,omitempty"` // optional structured data
 }
 

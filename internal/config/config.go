@@ -36,7 +36,7 @@ func Load() (*Config, error) {
 	}
 
 	if err := json.Unmarshal(data, cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("config: failed to read %s: %w", path, err)
 	}
 
 	if len(cfg.SessionsDir) == 0 {
