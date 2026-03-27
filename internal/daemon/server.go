@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/CRSylar/trak/internal/protocol"
 )
@@ -16,9 +17,11 @@ type Server struct {
 }
 
 func NewServer() (*Server, error) {
-	state := New()
+	state, err := New()
+	if err != nil {
+		return nil, err
+	}
 
-	// Remove stale socket if it exists
 	os.Remove(protocol.SocketPath)
 
 	l, err := net.Listen("unix", protocol.SocketPath)
@@ -31,11 +34,9 @@ func NewServer() (*Server, error) {
 
 func (s *Server) Serve() {
 	defer os.Remove(protocol.SocketPath)
-
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			// Listener closed — daemon is shutting down
 			return
 		}
 		go s.handleConn(conn)
@@ -58,7 +59,6 @@ func (s *Server) handleConn(conn net.Conn) {
 	resp := s.dispatch(req)
 	writeResponse(conn, resp)
 
-	// After a successful End, shut down the daemon
 	if req.Command == protocol.CmdEnd && resp.OK {
 		s.Stop()
 	}
@@ -69,6 +69,28 @@ func (s *Server) dispatch(req protocol.Request) protocol.Response {
 	var err error
 
 	switch req.Command {
+
+	case protocol.CmdCheckResume:
+		candidate, e := s.state.CheckResume()
+		if e != nil {
+			return protocol.Response{OK: false, Message: e.Error()}
+		}
+		if candidate == nil {
+			return protocol.Response{OK: true, Message: ""}
+		}
+		data, e := json.Marshal(candidate)
+		if e != nil {
+			return protocol.Response{OK: false, Message: "failed to marshal resume candidate: " + e.Error()}
+		}
+
+		return protocol.Response{OK: true, Message: string(data)}
+
+	case protocol.CmdResume:
+		msg, err = s.state.Resume(req.Payload)
+
+	case protocol.CmdDiscardAndStart:
+		msg, err = s.state.DiscardAndStart(req.Payload)
+
 	case protocol.CmdStart:
 		msg, err = s.state.Start()
 
@@ -84,14 +106,24 @@ func (s *Server) dispatch(req protocol.Request) protocol.Response {
 	case protocol.CmdSwitch:
 		msg, err = s.state.Switch(req.Payload)
 
+	case protocol.CmdEdit:
+		shift, e := time.ParseDuration(req.Payload)
+		if e != nil {
+			return protocol.Response{OK: false, Message: "invalid duration: " + e.Error()}
+		}
+		msg, err = s.state.Edit(shift)
+
 	case protocol.CmdStatus:
 		msg, err = s.state.Status()
 
 	case protocol.CmdProjects:
 		if req.Payload == "names" {
-			// Machine-readable list for Raycast
 			names := s.state.ListProjectNames()
-			data, _ := json.Marshal(names)
+			data, err := json.Marshal(names)
+			if err != nil {
+				return protocol.Response{OK: false, Message: fmt.Errorf("CmdProjects failed to Marshal names: %w", err).Error()}
+			}
+
 			return protocol.Response{OK: true, Message: string(data)}
 		}
 		msg, err = s.state.ListProjects()

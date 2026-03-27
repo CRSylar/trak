@@ -11,10 +11,15 @@ Built with Go. No cloud, no accounts, no bloat — just a fast local daemon and 
 ```
 CLI (trak) ──── unix socket ────► Daemon (trakd)
                                      holds session state in memory
+                                     checkpoints to disk on every action
 ```
 
-`trakd` runs in the background for the duration of your workday. `trak` is the CLI you interact with — or don't, once your hotkeys are set up. Project registrations are persisted to `~/.trak/projects.json`.
+`trakd` runs in the background for the duration of your workday. `trak` is the CLI you interact with — or don't, once your hotkeys are set up.
 
+State is persisted after every action under the configured `sessions_dir` (default to `~/.trak/sessions/`). If `trakd` crashes mid-day, your data is safe and you'll be offered to resume on next `trak start`.
+
+*NOTE*
+The `sessions_dir` is configurable in `~/.trak/config.json` and its default is derived from `os.UserHomeDir()`, so the actual path may differ from the literal `~/.trak/sessions` depending on your system.
 ---
 
 ## Install
@@ -134,12 +139,27 @@ trak next          # cycles: client-alpha → client-beta → internal → clien
 trak rest          # jump to rest immediately
 trak switch <n>    # go to a specific project by name
 
+# Forgot to switch for 20 minutes? Shift the last boundary back
+trak edit --last 20m
+
 # Check where you are
 trak status
 
 # Evening — end the workday and print the report
 trak end
 ```
+
+### Crash recovery
+
+If `trakd` crashes mid-day, your session is safe on disk. On next `trak start`:
+
+```
+⚠️  Unfinished session found — last active: client-alpha (at 11:30)
+Resume it? [y/n]:
+```
+
+`y` — reloads the session and picks up where you left off.
+`n` — closes the old session and starts a fresh one (`2026-03-25-extra.json`).
 
 ### End-of-day report
 
@@ -168,20 +188,58 @@ Total: 7h 42m  (09:00 → 16:42)
 | `trak next` | Cycle to the next work project (skips rest) |
 | `trak rest` | Switch to rest immediately |
 | `trak switch <n>` | Switch to a specific project |
+| `trak edit --last <duration>` | Shift the last switch back by duration |
 | `trak status` | Current project + elapsed time |
 | `trak projects` | List all registered projects |
 | `trak register <n>` | Register a new project |
 | `trak unregister <n>` | Remove a project |
 | `trak version` | Print version |
 
+### Duration format for `trak edit`
+
+| Input | Meaning |
+|---|---|
+| `15m` | 15 minutes |
+| `1h` | 1 hour |
+| `1h15m` | 1 hour and 15 minutes |
+| `--last 1h --last 15m` | chained flags, summed to 1h15m |
+
+---
+
+## Configuration
+
+On first run, `~/.trak/config.json` is created with defaults (with your home directory expanded):
+
+```json
+{
+  "sessions_dir": "/home/<user>/.trak/sessions"
+}
+```
+
+Change `sessions_dir` to store session files anywhere you like (e.g. a synced folder).
+
+---
+
+## Session files
+
+Each workday produces a JSON file in `sessions_dir`:
+
+```
+~/.trak/sessions/
+  2026-03-25.json         # normal day
+  2026-03-25-extra.json   # created if you discarded a crashed session and restarted
+```
+
+Files with `"closed": true` are finished days. Any file without it (or with `false`) is considered an active session and will trigger the resume prompt.
+
 ---
 
 ## Notes
 
 - `rest` is a built-in project — always available, cannot be unregistered
-- Session state lives **in memory only** and resets on `trak end` — persistence is planned for v0.3
-- If the daemon crashes or you need to force-stop it: `pkill trakd`
+- `trak edit` only affects the last switch boundary — closed days are immutable
 - The `trak next` cycle order is alphabetical and excludes `rest`
+- If you need to force-stop the daemon: `pkill trakd`
 
 ---
 
@@ -189,7 +247,6 @@ Total: 7h 42m  (09:00 → 16:42)
 
 | Milestone | Highlights |
 |---|---|
-| **v0.3** | JSON session persistence, crash recovery, `trak edit` |
 | **v0.4** | `trak report [date]`, weekly summary, CSV export |
 | **v1.0** | Idle detection, shell prompt integration, Homebrew tap |
 
@@ -197,7 +254,7 @@ Total: 7h 42m  (09:00 → 16:42)
 
 ## Contributing
 
-See [Contributing.md](Contributing.md). All contributions welcome.
+See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions welcome.
 
 ## License
 

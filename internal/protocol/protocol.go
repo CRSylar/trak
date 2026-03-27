@@ -2,15 +2,19 @@ package protocol
 
 // Command types sent from CLI to daemon
 const (
-	CmdStart      = "start"
-	CmdEnd        = "end"
-	CmdSwitch     = "switch"
-	CmdNext       = "next"
-	CmdRest       = "rest"
-	CmdStatus     = "status"
-	CmdProjects   = "projects"
-	CmdRegister   = "register"
-	CmdUnregister = "unregister"
+	CmdStart           = "start"
+	CmdEnd             = "end"
+	CmdSwitch          = "switch"
+	CmdNext            = "next"
+	CmdRest            = "rest"
+	CmdEdit            = "edit"
+	CmdStatus          = "status"
+	CmdProjects        = "projects"
+	CmdRegister        = "register"
+	CmdUnregister      = "unregister"
+	CmdCheckResume     = "check-resume"
+	CmdResume          = "resume"
+	CmdDiscardAndStart = "discard-and-start"
 )
 
 // Request is the message sent from CLI to daemon
@@ -22,8 +26,15 @@ type Request struct {
 // Response is what the daemon sends back
 type Response struct {
 	OK      bool   `json:"ok"`
-	Message string `json:"message"`          // human-readable output to print
-	Data    any    `json:"data,omitempty"`   // optional structured data
+	Message string `json:"message"`        // output to print
+	Data    any    `json:"data,omitempty"` // optional structured data
+}
+
+// ResumeCandidate is returned by CheckResume when an unfinished session exists
+type ResumeCandidate struct {
+	SessPath      string `json:"sessPath"`
+	ActiveProject string `json:"activeProject"`
+	SessAt        string `json:"sessAt"` // formatted last segment start
 }
 
 // SocketPath is the unix socket location

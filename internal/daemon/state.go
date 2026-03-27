@@ -9,42 +9,58 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/CRSylar/trak/internal/config"
+	"github.com/CRSylar/trak/internal/protocol"
+	"github.com/CRSylar/trak/internal/session"
 )
 
 const restProject = "rest"
-const configFileName = "projects.json"
-
-// Segment represents a contiguous block of work on a single project
-type Segment struct {
-	Project string
-	Start   time.Time
-	End     time.Time
-}
+const projectsFileName = "projects.json"
 
 // State holds all runtime state for a workday
 type State struct {
 	mu                 sync.Mutex
 	running            bool
-	dayStart           time.Time
-	activeProject      string
-	segmentStart       time.Time
-	segments           []Segment
-	registeredProjects map[string]bool // name -> true
-	configPath         string
-	cycleIndex         int // index into sorted non-rest project list
+	cfg                *config.Config
+	sess               *session.Session
+	sessPath           string
+	registeredProjects map[string]bool
+	projectsPath       string
+	cycleIndex         int
 }
 
-func New() *State {
-	home, _ := os.UserHomeDir()
-	cfgPath := filepath.Join(home, ".trak", configFileName)
+func New() (*State, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
 
 	s := &State{
-		configPath:         cfgPath,
+		cfg:                cfg,
 		registeredProjects: make(map[string]bool),
+		projectsPath:       filepath.Join(home, ".trak", projectsFileName),
 	}
 	s.registeredProjects[restProject] = true
-	s.loadProjects()
-	return s
+	err = s.loadProjects()
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (s *State) validSessPath(sessPath string) error {
+
+	if !strings.HasPrefix(filepath.Clean(sessPath), filepath.Clean(s.cfg.SessionsDir)+string(os.PathSeparator)) {
+		return fmt.Errorf("unsafe path: %s", sessPath)
+	}
+	return nil
 }
 
 // ---------- project persistence ----------
@@ -53,25 +69,29 @@ type projectConfig struct {
 	Projects []string `json:"projects"`
 }
 
-func (s *State) loadProjects() {
-	data, err := os.ReadFile(s.configPath)
+func (s *State) loadProjects() error {
+	data, err := os.ReadFile(s.projectsPath)
 	if err != nil {
-		return // file doesn't exist yet, fine
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("loadProjects: cannot read file %s: %w", s.projectsPath, err)
 	}
 	var cfg projectConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return
+		return fmt.Errorf("loadProjects: cannot Unmarshal data in file %s: %w", s.projectsPath, err)
 	}
 	for _, p := range cfg.Projects {
 		s.registeredProjects[p] = true
 	}
+	return nil
 }
 
 func (s *State) saveProjects() error {
 	var names []string
 	for name := range s.registeredProjects {
 		if name == restProject {
-			continue // rest is always implicit
+			continue
 		}
 		names = append(names, name)
 	}
@@ -82,31 +102,151 @@ func (s *State) saveProjects() error {
 	if err != nil {
 		return err
 	}
-
-	if err := os.MkdirAll(filepath.Dir(s.configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(s.projectsPath), 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(s.configPath, data, 0644)
+	return os.WriteFile(s.projectsPath, data, 0644)
+}
+
+// ---------- session checkpoint ----------
+
+// checkpoint flushes current in-memory state to disk — caller must hold the lock
+func (s *State) checkpoint() error {
+	if !s.running || s.sess == nil {
+		return nil
+	}
+	return session.Save(s.sess, s.sessPath)
 }
 
 // ---------- commands ----------
 
+// CheckResume looks for an unclosed session for today. Returns nil if none found.
+func (s *State) CheckResume() (*protocol.ResumeCandidate, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.running {
+		return nil, fmt.Errorf("workday already started (active: %s)", s.sess.ActiveProject)
+	}
+
+	existing, path, err := session.FindActiveToday(s.cfg.SessionsDir)
+	if err != nil {
+		return nil, fmt.Errorf("error scanning sessions: %w", err)
+	}
+	if existing == nil {
+		return nil, nil
+	}
+	if err := session.ValidateSession(*existing); err != nil {
+		return nil, err
+	}
+
+	return &protocol.ResumeCandidate{
+		SessPath:      path,
+		ActiveProject: existing.ActiveProject,
+		SessAt:        existing.SegmentStart.Format("15:04"),
+	}, nil
+}
+
+// Resume loads an existing session back into memory
+func (s *State) Resume(sessPath string) (string, error) {
+
+	if err := s.validSessPath(sessPath); err != nil {
+		return "", fmt.Errorf("invalid sessionsPath %q: %w", sessPath, err)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	existing, err := session.Load(sessPath)
+	if err != nil {
+		return "", err
+	}
+
+	if err := session.ValidateSession(*existing); err != nil {
+		return "", fmt.Errorf("cannot resume session at given path: %q as file contains invalid data; error: %w", sessPath, err)
+	}
+
+	s.running = true
+	s.sess = existing
+	s.sessPath = sessPath
+
+	return fmt.Sprintf("Resumed session — active: %s (since %s)",
+		existing.ActiveProject, existing.SegmentStart.Format("15:04")), nil
+}
+
+// DiscardAndStart closes the old session and starts a fresh one for today
+func (s *State) DiscardAndStart(oldPath string) (string, error) {
+
+	if err := s.validSessPath(oldPath); err != nil {
+		return "", fmt.Errorf("invalid session path: %w", err)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	old, err := session.Load(oldPath)
+	if err != nil {
+		return "", err
+	}
+
+	if err := session.ValidateSession(*old); err != nil {
+		return "", fmt.Errorf("old session is not valid, discardAndRestart operation will be aborted; error: %w", err)
+	}
+
+	now := time.Now()
+	activeBackup := old.ActiveProject
+	segStartBackup := old.SegmentStart
+	old.Segments = append(old.Segments, session.Segment{
+		Project: old.ActiveProject,
+		Start:   old.SegmentStart,
+		End:     now,
+	})
+
+	old.ActiveProject = ""
+	old.SegmentStart = time.Time{}
+
+	if err := session.Close(old, oldPath); err != nil {
+		old.ActiveProject = activeBackup
+		old.SegmentStart = segStartBackup
+		old.Segments = old.Segments[:len(old.Segments)-1]
+		return "", fmt.Errorf("failed to close old session, that is loaded in memory, please try to close it manually with `trak end`; error: %w", err)
+	}
+
+	return s.doStart(true)
+}
+
+// Start begins a new workday — only called when CheckResume found nothing
 func (s *State) Start() (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.running {
-		return "", fmt.Errorf("workday already started (active project: %s)", s.activeProject)
+		return "", fmt.Errorf("workday already started (active: %s)", s.sess.ActiveProject)
+	}
+	return s.doStart(false)
+}
+
+// doStart initialises a fresh session — caller must hold the lock
+func (s *State) doStart(extra bool) (string, error) {
+	today := time.Now().Format("2006-01-02")
+	var path string
+	if extra {
+		path = session.ExtraFilePath(s.cfg.SessionsDir, today)
+	} else {
+		path = session.FilePath(s.cfg.SessionsDir, today)
+	}
+
+	sess := session.New(restProject)
+	if err := session.Save(sess, path); err != nil {
+		return "", fmt.Errorf("failed to create session file: %w", err)
 	}
 
 	s.running = true
-	s.dayStart = time.Now()
-	s.activeProject = restProject
-	s.segmentStart = s.dayStart
-	s.segments = nil
+	s.sess = sess
+	s.sessPath = path
 
 	return fmt.Sprintf("Workday started at %s. Active project: %s",
-		s.dayStart.Format("15:04"), restProject), nil
+		sess.DayStart.Format("15:04"), restProject), nil
 }
 
 func (s *State) End() (string, error) {
@@ -118,15 +258,30 @@ func (s *State) End() (string, error) {
 	}
 
 	now := time.Now()
-	// Close the current segment
-	s.segments = append(s.segments, Segment{
-		Project: s.activeProject,
-		Start:   s.segmentStart,
+	activeBackup := s.sess.ActiveProject
+	segStartBackup := s.sess.SegmentStart
+	s.sess.Segments = append(s.sess.Segments, session.Segment{
+		Project: s.sess.ActiveProject,
+		Start:   s.sess.SegmentStart,
 		End:     now,
 	})
 
-	report := buildReport(s.dayStart, now, s.segments)
+	s.sess.ActiveProject = ""
+	s.sess.SegmentStart = time.Time{}
+
+	err := session.Close(s.sess, s.sessPath)
+	if err != nil {
+		s.sess.ActiveProject = activeBackup
+		s.sess.SegmentStart = segStartBackup
+		s.sess.Segments = s.sess.Segments[:len(s.sess.Segments)-1]
+		return "", fmt.Errorf("error saving sessions to file, last segment is still in daemon state and is not been written, please retry; error: %w", err)
+	}
+
+	report := buildReport(s.sess.DayStart, now, s.sess.Segments)
+
 	s.running = false
+	s.sess = nil
+
 	return report, nil
 }
 
@@ -140,10 +295,92 @@ func (s *State) Switch(project string) (string, error) {
 	if !s.registeredProjects[project] {
 		return "", fmt.Errorf("unknown project %q — register it first with 'trak register %s'", project, project)
 	}
-	if s.activeProject == project {
+	if s.sess.ActiveProject == project {
 		return fmt.Sprintf("already on %s", project), nil
 	}
 	return s.doSwitch(project)
+}
+
+func (s *State) Next() (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.running {
+		return "", fmt.Errorf("no workday in progress — run 'trak start' first")
+	}
+
+	projects := s.workProjects()
+	if len(projects) == 0 {
+		return "", fmt.Errorf("no work projects registered — add one with 'trak register <project>'")
+	}
+
+	if s.sess.ActiveProject != restProject {
+		for i, p := range projects {
+			if p == s.sess.ActiveProject {
+				s.cycleIndex = (i + 1) % len(projects)
+				break
+			}
+		}
+	}
+	if s.cycleIndex >= len(projects) {
+		s.cycleIndex = 0
+	}
+
+	return s.doSwitch(projects[s.cycleIndex])
+}
+
+func (s *State) Rest() (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.running {
+		return "", fmt.Errorf("no workday in progress — run 'trak start' first")
+	}
+	if s.sess.ActiveProject == restProject {
+		return "already on rest", nil
+	}
+	return s.doSwitch(restProject)
+}
+
+func (s *State) Edit(shift time.Duration) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.running {
+		return "", fmt.Errorf("no workday in progress — run 'trak start' first")
+	}
+
+	segs := s.sess.Segments
+	if len(segs) == 0 {
+		return "", fmt.Errorf("no completed segments to edit yet — switch projects at least once first")
+	}
+
+	// Shift the boundary between the last completed segment and the current open one.
+	// Cap the shift so it never exceeds the last segment's own duration.
+	currentStart := s.sess.SegmentStart
+	lastStart := segs[len(segs)-1].Start
+	maxShift := currentStart.Sub(lastStart)
+	if shift > maxShift {
+		shift = maxShift
+	}
+
+	// safety check for negative value.
+	// since we'll use the minus sign later
+	// a negative value here will actually move timers in the future
+	if shift < 0 {
+		shift = 0
+	}
+
+	newBoundary := currentStart.Add(-shift)
+	s.sess.Segments[len(segs)-1].End = newBoundary
+	s.sess.SegmentStart = newBoundary
+
+	if err := s.checkpoint(); err != nil {
+		return "", fmt.Errorf("edit applied in memory but failed to save: %w", err)
+	}
+
+	return fmt.Sprintf("Shifted last switch back by %s → boundary now at %s",
+		formatDuration(shift), newBoundary.Format("15:04")), nil
 }
 
 func (s *State) Status() (string, error) {
@@ -154,14 +391,14 @@ func (s *State) Status() (string, error) {
 		return "", fmt.Errorf("no workday in progress")
 	}
 
-	elapsed := time.Since(s.segmentStart)
-	dayElapsed := time.Since(s.dayStart)
+	elapsed := time.Since(s.sess.SegmentStart)
+	dayElapsed := time.Since(s.sess.DayStart)
 
 	return fmt.Sprintf("Active: %s (%s on this task) | Day: %s since %s",
-		s.activeProject,
+		s.sess.ActiveProject,
 		formatDuration(elapsed),
 		formatDuration(dayElapsed),
-		s.dayStart.Format("15:04"),
+		s.sess.DayStart.Format("15:04"),
 	), nil
 }
 
@@ -178,19 +415,15 @@ func (s *State) ListProjects() (string, error) {
 	var result strings.Builder
 	result.WriteString("Registered projects:\n")
 	for _, name := range names {
-		marker := "  "
-		if s.running && name == s.activeProject {
-			marker := "▶ "
-			_ = marker
+		if s.running && name == s.sess.ActiveProject {
 			fmt.Fprintf(&result, "▶ %s (active)\n", name)
 			continue
 		}
-		fmt.Fprintf(&result, "%s%s\n", marker, name)
+		fmt.Fprintf(&result, "  %s\n", name)
 	}
 	return result.String(), nil
 }
 
-// ListProjectNames returns just the names (used by Raycast script)
 func (s *State) ListProjectNames() []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -221,76 +454,6 @@ func (s *State) Register(name string) (string, error) {
 	return fmt.Sprintf("Project %q registered", name), nil
 }
 
-// workProjects returns sorted project names excluding rest (no lock — caller must hold)
-func (s *State) workProjects() []string {
-	var names []string
-	for name := range s.registeredProjects {
-		if name != restProject {
-			names = append(names, name)
-		}
-	}
-	sort.Strings(names)
-	return names
-}
-
-func (s *State) Next() (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if !s.running {
-		return "", fmt.Errorf("no workday in progress — run 'trak start' first")
-	}
-
-	projects := s.workProjects()
-	if len(projects) == 0 {
-		return "", fmt.Errorf("no work projects registered — add one with 'trak register <name>'")
-	}
-
-	// If currently on rest, resume at last cycleIndex; otherwise advance
-	if s.activeProject != restProject {
-		// find current index and advance
-		for i, p := range projects {
-			if p == s.activeProject {
-				s.cycleIndex = (i + 1) % len(projects)
-				break
-			}
-		}
-	}
-	// clamp in case projects were removed
-	if s.cycleIndex >= len(projects) {
-		s.cycleIndex = 0
-	}
-
-	next := projects[s.cycleIndex]
-	return s.doSwitch(next)
-}
-
-func (s *State) Rest() (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if !s.running {
-		return "", fmt.Errorf("no workday in progress — run 'trak start' first")
-	}
-	if s.activeProject == restProject {
-		return "already on rest", nil
-	}
-	return s.doSwitch(restProject)
-}
-
-// doSwitch performs the actual project switch — caller must hold the lock
-func (s *State) doSwitch(project string) (string, error) {
-	now := time.Now()
-	s.segments = append(s.segments, Segment{
-		Project: s.activeProject,
-		Start:   s.segmentStart,
-		End:     now,
-	})
-	s.activeProject = project
-	s.segmentStart = now
-	return fmt.Sprintf("⏱ %s", project), nil
-}
-
 func (s *State) Unregister(name string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -301,7 +464,7 @@ func (s *State) Unregister(name string) (string, error) {
 	if !s.registeredProjects[name] {
 		return "", fmt.Errorf("project %q not found", name)
 	}
-	if s.running && s.activeProject == name {
+	if s.running && s.sess.ActiveProject == name {
 		return "", fmt.Errorf("cannot unregister active project %q — switch first", name)
 	}
 
@@ -312,7 +475,47 @@ func (s *State) Unregister(name string) (string, error) {
 	return fmt.Sprintf("Project %q unregistered", name), nil
 }
 
-// ---------- helpers ----------
+// ---------- internal helpers ----------
+
+// doSwitch performs the actual project switch and checkpoints — caller must hold the lock
+func (s *State) doSwitch(project string) (string, error) {
+	now := time.Now()
+
+	oldSess := session.Session{
+		ActiveProject: s.sess.ActiveProject,
+		Date:          s.sess.Date,
+		Closed:        s.sess.Closed,
+		DayStart:      s.sess.DayStart,
+		SegmentStart:  s.sess.SegmentStart,
+	}
+	oldSess.Segments = append(oldSess.Segments, s.sess.Segments...)
+
+	s.sess.Segments = append(s.sess.Segments, session.Segment{
+		Project: s.sess.ActiveProject,
+		Start:   s.sess.SegmentStart,
+		End:     now,
+	})
+	s.sess.ActiveProject = project
+	s.sess.SegmentStart = now
+
+	if err := s.checkpoint(); err != nil {
+		s.sess = &oldSess
+		return "", fmt.Errorf("failed to save switch to %q: %w; state rolled back to %q", project, err, oldSess.ActiveProject)
+	}
+
+	return fmt.Sprintf("⏱ %s", project), nil
+}
+
+func (s *State) workProjects() []string {
+	var names []string
+	for name := range s.registeredProjects {
+		if name != restProject {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
 
 func formatDuration(d time.Duration) string {
 	d = d.Round(time.Minute)
