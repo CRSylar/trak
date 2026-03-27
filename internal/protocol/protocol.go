@@ -32,11 +32,10 @@ type Response struct {
 
 // ResumeCandidate is returned by CheckResume when an unfinished session exists
 type ResumeCandidate struct {
-	SessPath      string
-	ActiveProject string
-	SessAt        string // formatted last segment start
+	SessPath      string `json:"sessPath"`
+	ActiveProject string `json:"activeProject"`
+	SessAt        string `json:"sessAt"` // formatted last segment start
 }
-
 
 // SocketPath is the unix socket location
 const SocketPath = "/tmp/trak.sock"
