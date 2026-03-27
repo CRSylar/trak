@@ -1,4 +1,4 @@
-oldSess.ActiveProject# trak
+# trak
 
 A minimal CLI time tracker for freelancers. Register projects, switch between them instantly via a hotkey, and get a clean end-of-day report.
 

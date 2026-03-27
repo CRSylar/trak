@@ -188,21 +188,21 @@ func (s *State) DiscardAndStart(oldPath string) (string, error) {
 		return "", err
 	}
 	now := time.Now()
-	activeBackup := s.sess.ActiveProject
-	segStartBackup := s.sess.SegmentStart
-	s.sess.Segments = append(s.sess.Segments, session.Segment{
-		Project: s.sess.ActiveProject,
-		Start:   s.sess.SegmentStart,
+	activeBackup := old.ActiveProject
+	segStartBackup := old.SegmentStart
+	old.Segments = append(old.Segments, session.Segment{
+		Project: old.ActiveProject,
+		Start:   old.SegmentStart,
 		End:     now,
 	})
 
-	s.sess.ActiveProject = ""
-	s.sess.SegmentStart = time.Time{}
+	old.ActiveProject = ""
+	old.SegmentStart = time.Time{}
 
 	if err := session.Close(old, now, oldPath); err != nil {
-		s.sess.ActiveProject = activeBackup
-		s.sess.SegmentStart = segStartBackup
-		s.sess.Segments = s.sess.Segments[:len(s.sess.Segments)-1]
+		old.ActiveProject = activeBackup
+		old.SegmentStart = segStartBackup
+		old.Segments = old.Segments[:len(old.Segments)-1]
 		return "", fmt.Errorf("failed to close old session, that is loaded in memory, please try to close it manually with `trak end`; error: %w", err)
 	}
 
