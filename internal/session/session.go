@@ -150,13 +150,5 @@ func FindActiveToday(sessionsDir string) (*Session, string, error) {
 func Close(s *Session, now time.Time, path string) error {
 	s.Closed = true
 
-	s.Segments = append(s.Segments, Segment{
-		Project: s.ActiveProject,
-		Start:   s.SegmentStart,
-		End:     now,
-	})
-
-	s.ActiveProject = ""
-	s.SegmentStart = time.Time{}
-	return Save(s, path)
+return Save(s, path)
 }
