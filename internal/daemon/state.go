@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/CRSylar/trak/internal/config"
+	"github.com/CRSylar/trak/internal/protocol"
 	"github.com/CRSylar/trak/internal/session"
 )
 
@@ -119,15 +120,8 @@ func (s *State) checkpoint() error {
 
 // ---------- commands ----------
 
-// ResumeCandidate is returned by CheckResume when an unfinished session exists
-type ResumeCandidate struct {
-	SessPath      string
-	ActiveProject string
-	SessAt        string // formatted last segment start
-}
-
 // CheckResume looks for an unclosed session for today. Returns nil if none found.
-func (s *State) CheckResume() (*ResumeCandidate, error) {
+func (s *State) CheckResume() (*protocol.ResumeCandidate, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -143,7 +137,7 @@ func (s *State) CheckResume() (*ResumeCandidate, error) {
 		return nil, nil
 	}
 
-	return &ResumeCandidate{
+	return &protocol.ResumeCandidate{
 		SessPath:      path,
 		ActiveProject: existing.ActiveProject,
 		SessAt:        existing.SegmentStart.Format("15:04"),
@@ -166,7 +160,7 @@ func (s *State) Resume(sessPath string) (string, error) {
 	}
 
 	if err := session.ValidateSession(*existing); err != nil {
-		return "", fmt.Errorf("cannot resume session at %q, file contains invalid session data; errror: %w", sessPath, err)
+		return "", fmt.Errorf("cannot resume session at given path: %q as file contains invalid data; error: %w", sessPath, err)
 	}
 
 	s.running = true
@@ -483,14 +477,16 @@ func (s *State) Unregister(name string) (string, error) {
 // doSwitch performs the actual project switch and checkpoints — caller must hold the lock
 func (s *State) doSwitch(project string) (string, error) {
 	now := time.Now()
+
 	oldSess := session.Session{
 		ActiveProject: s.sess.ActiveProject,
 		Date:          s.sess.Date,
 		Closed:        s.sess.Closed,
 		DayStart:      s.sess.DayStart,
 		SegmentStart:  s.sess.SegmentStart,
-		Segments:      s.sess.Segments[:],
 	}
+	oldSess.Segments = append(oldSess.Segments, s.sess.Segments...)
+
 	s.sess.Segments = append(s.sess.Segments, session.Segment{
 		Project: s.sess.ActiveProject,
 		Start:   s.sess.SegmentStart,

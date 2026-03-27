@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/CRSylar/trak/internal/client"
-	"github.com/CRSylar/trak/internal/daemon"
 	"github.com/CRSylar/trak/internal/protocol"
 )
 
@@ -144,7 +143,7 @@ func startWorkday() {
 	}
 
 	// Parse the resume candidate
-	var candidate daemon.ResumeCandidate
+	var candidate protocol.ResumeCandidate
 	if err := json.Unmarshal([]byte(raw), &candidate); err != nil {
 		dieOnErr(fmt.Errorf("failed to parse resume candidate: %w", err))
 	}
