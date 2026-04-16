@@ -21,9 +21,19 @@ import (
 // version is set at build time via -ldflags "-X main.version=v0.1.0"
 var version = "dev"
 
+func printReminderUsage() {
+	fmt.Println("Additional commands:")
+	fmt.Println("  remind <subcommand>")
+	fmt.Println("    list                 List configured reminders")
+	fmt.Println("    add <time> <message> Add a reminder")
+	fmt.Println("    remove <id>          Remove a reminder")
+	fmt.Println("  install-reminders      Install reminder integration")
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		printUsage()
+		printReminderUsage()
 		os.Exit(1)
 	}
 
@@ -94,10 +104,12 @@ func main() {
 
 	case "help", "--help", "-h":
 		printUsage()
+		printReminderUsage()
 
 	default:
 		fmt.Fprintf(os.Stderr, "trak: unknown command %q\n\n", cmd)
 		printUsage()
+		printReminderUsage()
 		os.Exit(1)
 	}
 }
@@ -295,7 +307,7 @@ func remindCommand() {
 func installRemindersCommand() {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
+		fmt.Fprintf(os.Stderr, "trak: failed to load config: %v\n", err)
 		os.Exit(1)
 	}
 

@@ -2,6 +2,7 @@ package remind
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -10,11 +11,12 @@ import (
 	"github.com/CRSylar/trak/internal/config"
 )
 
+var parseTimeRegexp = regexp.MustCompile(`^(\d{1,2}):(\d{2})$`)
+
 // ParseTime parses a HH:MM string and returns hour and minute.
 // Returns error if format is invalid.
 func ParseTime(s string) (hour, minute int, err error) {
-	re := regexp.MustCompile(`^(\d{1,2}):(\d{2})$`)
-	match := re.FindStringSubmatch(s)
+	match := parseTimeRegexp.FindStringSubmatch(s)
 	if match == nil {
 		return 0, 0, fmt.Errorf("invalid time format: %q (expected HH:MM)", s)
 	}
@@ -66,10 +68,15 @@ func LoadSchedule(cfg *config.Config) (*Schedule, error) {
 }
 
 // CronLines returns the two cron lines for start and stop reminders.
-// Assumes the trak binary is in PATH.
+// Uses the absolute path to the current trak executable when available.
 func (s *Schedule) CronLines() (startCron, stopCron string) {
-	startCron = CronEntry(s.StartHour, s.StartMinute, "trak remind start")
-	stopCron = CronEntry(s.EndHour, s.EndMinute, "trak remind stop")
+	commandPrefix := "trak"
+	if executablePath, err := os.Executable(); err == nil && executablePath != "" {
+		commandPrefix = fmt.Sprintf("%q", executablePath)
+	}
+
+	startCron = CronEntry(s.StartHour, s.StartMinute, commandPrefix+" remind start")
+	stopCron = CronEntry(s.EndHour, s.EndMinute, commandPrefix+" remind stop")
 	return startCron, stopCron
 }
 
@@ -110,8 +117,6 @@ func (s *Schedule) InstallInstructions(platform Platform) string {
 		sb.WriteString("To install with cron, add these lines to your crontab (crontab -e):\n")
 		sb.WriteString(fmt.Sprintf("  %s\n", startCron))
 		sb.WriteString(fmt.Sprintf("  %s\n", stopCron))
-		sb.WriteString("\n")
-		sb.WriteString("Or run: trak install-reminders --cron (not yet implemented)\n")
 	case PlatformWindows:
 		sb.WriteString("Windows: create scheduled tasks using Task Scheduler.\n")
 		sb.WriteString(fmt.Sprintf("Command: trak remind start at %02d:%02d\n", s.StartHour, s.StartMinute))

@@ -1,6 +1,9 @@
 package notify
 
 import (
+	"os/exec"
+	"runtime"
+
 	"github.com/gen2brain/beeep"
 )
 
@@ -37,7 +40,17 @@ func Test() error {
 
 // IsAvailable checks if notifications are supported on the current platform.
 func IsAvailable() bool {
-	// beeep internally checks platform support; we can just try a harmless operation.
-	// For simplicity, assume true.
-	return true
+	switch runtime.GOOS {
+	case "linux":
+		_, err := exec.LookPath("notify-send")
+		return err == nil
+	case "darwin":
+		_, err := exec.LookPath("osascript")
+		return err == nil
+	case "windows":
+		_, err := exec.LookPath("powershell")
+		return err == nil
+	default:
+		return false
+	}
 }

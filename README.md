@@ -218,10 +218,12 @@ On first run, `~/.trak/config.json` is created with defaults (with your home dir
 ```json
 {
   "sessions_dir": "/home/<user>/.trak/sessions",
-  "reminder_start_time": "09:30",   // optional, format HH:MM (24-hour)
-  "reminder_end_time": "18:00"      // optional, format HH:MM (24-hour)
+  "reminder_start_time": "09:30",
+  "reminder_end_time": "18:00"
 }
 ```
+
+`reminder_start_time` and `reminder_end_time` are optional and use `HH:MM` 24-hour format.
 
 Change `sessions_dir` to store session files anywhere you like (e.g. a synced folder).
 
