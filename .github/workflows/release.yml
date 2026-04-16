@@ -76,11 +76,6 @@ jobs:
               -o "${OUT}/trak" \
               ./cmd/trak
 
-            GOOS=$OS GOARCH=$ARCH go build \
-              -ldflags="-s -w -X main.version=${VERSION}" \
-              -o "${OUT}/trakd" \
-              ./cmd/trakd
-
             # Package as tar.gz
             tar -czf "dist/trak-${OS}-${ARCH}.tar.gz" -C dist "trak-${OS}-${ARCH}"
             echo "  → dist/trak-${OS}-${ARCH}.tar.gz"
