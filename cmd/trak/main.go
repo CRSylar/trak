@@ -27,9 +27,9 @@ var version = "dev"
 func printReminderUsage() {
 	fmt.Println("Additional commands:")
 	fmt.Println("  remind <subcommand>")
-	fmt.Println("    start                Start reminder service")
-	fmt.Println("    stop                 Stop reminder service")
-	fmt.Println("    custom <time> <message> Add a custom reminder")
+	fmt.Println("    start                Run a reminder check")
+	fmt.Println("    stop                 Stop reminder notifications")
+	fmt.Println("    custom <message>     Add a custom reminder")
 	fmt.Println("    test                 Send a test reminder")
 	fmt.Println("  install-reminders      Install reminder integration")
 }
@@ -250,9 +250,21 @@ func isDaemonUnavailableError(err error) bool {
 		return true
 	}
 
-	return errors.Is(err, os.ErrNotExist) ||
+	if errors.Is(err, os.ErrNotExist) ||
 		errors.Is(err, syscall.ENOENT) ||
-		errors.Is(err, syscall.ECONNREFUSED)
+		errors.Is(err, syscall.ECONNREFUSED) {
+		return true
+	}
+
+	// client.Send may flatten dial failures into a formatted error string
+	// instead of preserving the original net/syscall error via wrapping.
+	// Recognize the common daemon-unavailable cases so remind start/stop
+	// does not treat "daemon not running" as a fatal error.
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "dial") &&
+		(strings.Contains(msg, "no such file or directory") ||
+			strings.Contains(msg, "connection refused") ||
+			strings.Contains(msg, "connect:"))
 }
 
 func remindCommand() {

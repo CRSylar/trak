@@ -239,7 +239,7 @@ To help you remember to start and stop tracking, trak supports passive reminders
 
 1. **Configure reminder times** in `~/.trak/config.json` (see example above with `reminder_start_time` / `reminder_end_time`).
 2. **Test notifications** with `trak remind test`.
-3. **Install scheduled reminders** with `trak install-reminders` (prints cron/launchd instructions).
+3. **Install scheduled reminders** with `trak install-reminders` (prints cron instructions on Linux and macOS, and Task Scheduler notes on Windows).
 4. **Manual reminders**:
    - `trak remind start` – reminds you if the daemon isn't running
    - `trak remind stop` – reminds you if the daemon is still running
