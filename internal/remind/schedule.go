@@ -117,6 +117,9 @@ func (s *Schedule) InstallInstructions(platform Platform) string {
 		sb.WriteString("To install with cron, add these lines to your crontab (crontab -e):\n")
 		sb.WriteString(fmt.Sprintf("  %s\n", startCron))
 		sb.WriteString(fmt.Sprintf("  %s\n", stopCron))
+		if platform == PlatformDarwin {
+			sb.WriteString("\nNote: macOS also supports launchd; cron instructions provided for simplicity.\n")
+		}
 	case PlatformWindows:
 		exeCommand := "trak"
 		if exePath, err := os.Executable(); err == nil && exePath != "" {
