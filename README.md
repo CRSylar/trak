@@ -194,6 +194,11 @@ Total: 7h 42m  (09:00 → 16:42)
 | `trak register <n>` | Register a new project |
 | `trak unregister <n>` | Remove a project |
 | `trak version` | Print version |
+| `trak remind start` | Remind to start workday if daemon not running |
+| `trak remind stop` | Remind to stop workday if daemon running |
+| `trak remind custom <msg>` | Send a custom notification |
+| `trak remind test` | Send a test notification |
+| `trak install-reminders` | Show instructions for scheduled reminders |
 
 ### Duration format for `trak edit`
 
@@ -217,6 +222,31 @@ On first run, `~/.trak/config.json` is created with defaults (with your home dir
 ```
 
 Change `sessions_dir` to store session files anywhere you like (e.g. a synced folder).
+
+`reminder_start_time` and `reminder_end_time` are optional and use `HH:MM` 24-hour format. Add them to `~/.trak/config.json` if you want reminders enabled:
+
+```json
+{
+  "sessions_dir": "/home/<user>/.trak/sessions",
+  "reminder_start_time": "09:30",
+  "reminder_end_time": "18:00"
+}
+```
+
+### Reminders
+
+To help you remember to start and stop tracking, trak supports passive reminders via desktop notifications (macOS and Linux via beeep library; Windows may work).
+
+1. **Configure reminder times** in `~/.trak/config.json` (see example above with `reminder_start_time` / `reminder_end_time`).
+2. **Test notifications** with `trak remind test`.
+3. **Install scheduled reminders** with `trak install-reminders` (prints cron instructions on Linux and macOS, and Task Scheduler notes on Windows).  
+   - On macOS, cron is used (launchd support may be added in a future release). Cron works on modern macOS via the cron daemon.
+4. **Manual reminders**:
+   - `trak remind start` – reminds you if the daemon isn't running
+   - `trak remind stop` – reminds you if the daemon is still running
+   - `trak remind custom <message>` – sends a custom notification
+
+The reminders are passive: they only notify you, they don't automatically start/stop the tracker.
 
 ---
 
