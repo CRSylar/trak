@@ -118,9 +118,14 @@ func (s *Schedule) InstallInstructions(platform Platform) string {
 		sb.WriteString(fmt.Sprintf("  %s\n", startCron))
 		sb.WriteString(fmt.Sprintf("  %s\n", stopCron))
 	case PlatformWindows:
+		exeCommand := "trak"
+		if exePath, err := os.Executable(); err == nil && exePath != "" {
+			exeCommand = strconv.Quote(exePath)
+		}
+
 		sb.WriteString("Windows: create scheduled tasks using Task Scheduler.\n")
-		sb.WriteString(fmt.Sprintf("Command: trak remind start at %02d:%02d\n", s.StartHour, s.StartMinute))
-		sb.WriteString(fmt.Sprintf("Command: trak remind stop at %02d:%02d\n", s.EndHour, s.EndMinute))
+		sb.WriteString(fmt.Sprintf("Command: %s remind start at %02d:%02d\n", exeCommand, s.StartHour, s.StartMinute))
+		sb.WriteString(fmt.Sprintf("Command: %s remind stop at %02d:%02d\n", exeCommand, s.EndHour, s.EndMinute))
 	}
 	return sb.String()
 }

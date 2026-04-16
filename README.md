@@ -217,21 +217,27 @@ On first run, `~/.trak/config.json` is created with defaults (with your home dir
 
 ```json
 {
+  "sessions_dir": "/home/<user>/.trak/sessions"
+}
+```
+
+Change `sessions_dir` to store session files anywhere you like (e.g. a synced folder).
+
+`reminder_start_time` and `reminder_end_time` are optional and use `HH:MM` 24-hour format. Add them to `~/.trak/config.json` if you want reminders enabled:
+
+```json
+{
   "sessions_dir": "/home/<user>/.trak/sessions",
   "reminder_start_time": "09:30",
   "reminder_end_time": "18:00"
 }
 ```
 
-`reminder_start_time` and `reminder_end_time` are optional and use `HH:MM` 24-hour format.
-
-Change `sessions_dir` to store session files anywhere you like (e.g. a synced folder).
-
 ### Reminders
 
 To help you remember to start and stop tracking, trak supports passive reminders via desktop notifications (macOS and Linux via beeep library; Windows may work).
 
-1. **Configure reminder times** in `~/.trak/config.json` (see example above).
+1. **Configure reminder times** in `~/.trak/config.json` (see example above with `reminder_start_time` / `reminder_end_time`).
 2. **Test notifications** with `trak remind test`.
 3. **Install scheduled reminders** with `trak install-reminders` (prints cron/launchd instructions).
 4. **Manual reminders**:

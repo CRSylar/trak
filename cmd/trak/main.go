@@ -3,12 +3,15 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/CRSylar/trak/internal/client"
@@ -24,9 +27,10 @@ var version = "dev"
 func printReminderUsage() {
 	fmt.Println("Additional commands:")
 	fmt.Println("  remind <subcommand>")
-	fmt.Println("    list                 List configured reminders")
-	fmt.Println("    add <time> <message> Add a reminder")
-	fmt.Println("    remove <id>          Remove a reminder")
+	fmt.Println("    start                Start reminder service")
+	fmt.Println("    stop                 Stop reminder service")
+	fmt.Println("    custom <time> <message> Add a custom reminder")
+	fmt.Println("    test                 Send a test reminder")
 	fmt.Println("  install-reminders      Install reminder integration")
 }
 
@@ -236,6 +240,21 @@ func editLastSwitch() {
 
 // ---------- trak remind ----------
 
+func isDaemonUnavailableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		return true
+	}
+
+	return errors.Is(err, os.ErrNotExist) ||
+		errors.Is(err, syscall.ENOENT) ||
+		errors.Is(err, syscall.ECONNREFUSED)
+}
+
 func remindCommand() {
 	if len(os.Args) < 3 {
 		fmt.Fprintf(os.Stderr, "usage: trak remind <subcommand>\n")
@@ -253,6 +272,11 @@ func remindCommand() {
 		// check if daemon is running
 		_, err := client.Send(protocol.CmdProjects, "")
 		if err != nil {
+			if !isDaemonUnavailableError(err) {
+				fmt.Fprintf(os.Stderr, "failed to check daemon status: %v\n", err)
+				os.Exit(1)
+			}
+
 			// daemon not running, send notification
 			if err := notify.NotifyIfNotStarted(); err != nil {
 				fmt.Fprintf(os.Stderr, "failed to send notification: %v\n", err)
@@ -273,8 +297,11 @@ func remindCommand() {
 				os.Exit(1)
 			}
 			fmt.Println("Sent reminder to stop workday")
-		} else {
+		} else if isDaemonUnavailableError(err) {
 			fmt.Println("Daemon not running — no reminder needed")
+		} else {
+			fmt.Fprintf(os.Stderr, "failed to check daemon status: %v\n", err)
+			os.Exit(1)
 		}
 
 	case "custom":
