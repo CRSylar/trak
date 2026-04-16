@@ -11,7 +11,9 @@ const configFileName = "config.json"
 
 // Config holds user-configurable settings
 type Config struct {
-	SessionsDir string `json:"sessions_dir"`
+	SessionsDir       string `json:"sessions_dir"`
+	ReminderStartTime string `json:"reminder_start_time,omitempty"`
+	ReminderEndTime   string `json:"reminder_end_time,omitempty"`
 }
 
 // Load reads the config file, creating it with defaults if it doesn't exist
@@ -60,6 +62,7 @@ func defaults() (*Config, error) {
 
 	return &Config{
 		SessionsDir: filepath.Join(home, ".trak", "sessions"),
+		// reminder times left empty by default; user must configure
 	}, nil
 }
 
