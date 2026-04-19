@@ -58,6 +58,10 @@ func GetSessionsDir() string {
 	return conf.SessionsDir
 }
 
+func GetConfig() *Config {
+	return conf
+}
+
 func defaults() (*Config, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {

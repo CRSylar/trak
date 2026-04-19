@@ -56,9 +56,9 @@ func main() {
 		requireArg("unregister", "<project-name>")
 		command.Unregister(os.Args[2])
 	case "remind":
-		//TODO:
+		command.Remind()
 	case "install-reminders":
-		//TODO:
+		command.InstallReminders()
 	case "help", "--help", "-h":
 		printUsage()
 
@@ -93,13 +93,13 @@ USAGE:
   trak unregister <project>          Remove a project
   trak version                       Print version
 
-Additional commands:")
-	  remind <subcommand>")
-	    start                Run a reminder check")
-	    stop                 Stop reminder notifications")
-	    custom <message>     Add a custom reminder")
-	    test                 Send a test reminder")
-	  install-reminders      Install reminder integration")
+Additional commands:
+		remind <subcommand>:
+			start                Run a reminder check")
+			stop                 Stop reminder notifications")
+			custom <message>     Add a custom reminder")
+			test                 Send a test reminder")
+		install-reminders      Install reminder integration")
 
 DURATION FORMAT (for trak edit):
   15m                    15 minutes
