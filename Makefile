@@ -6,15 +6,13 @@ GOARCH ?= $(shell go env GOARCH)
 
 build:
 	@echo "Building trak and trakd for $(GOOS)/$(GOARCH)..."
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o bin/trak  ./cmd/trak
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o bin/trakd ./cmd/trakd
-	@echo "Done → bin/trak  bin/trakd"
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o bin/trak  ./main.go
+	@echo "Done → bin/trak  "
 
 install: build
 	@echo "Installing to $(BINARY_DIR)..."
 	@mkdir -p $(BINARY_DIR)
 	cp bin/trak  $(BINARY_DIR)/trak
-	cp bin/trakd $(BINARY_DIR)/trakd
 	@echo "Installed. Make sure $(BINARY_DIR) is in your PATH."
 	@echo ""
 	@echo "Next: add the Raycast script:"
@@ -27,5 +25,4 @@ clean:
 
 # Run locally for dev (native arch, no cross-compile)
 dev:
-	go build -o bin/trak  ./cmd/trak
-	go build -o bin/trakd ./cmd/trakd
+	go run ./main.go

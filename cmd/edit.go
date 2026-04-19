@@ -45,13 +45,13 @@ func EditLastSwitch() {
 	now := time.Now()
 	sess, err := session.LoadSession(now.Format("2006-01-02"))
 	if err != nil {
-		fmt.Fprint(os.Stderr, fmt.Errorf("cannot load session file: %w", err))
+		fmt.Fprint(os.Stderr, fmt.Errorf("cannot load session file: %w\n", err))
 		return
 	}
 
 	segLen := len(sess.Segments)
 	if segLen <= 1 {
-		fmt.Fprint(os.Stderr, "no completed segments to edit yet - switch projects at least one time first")
+		fmt.Fprint(os.Stderr, "no completed segments to edit yet - switch projects at least one time first\n")
 		return
 	}
 
@@ -67,12 +67,13 @@ func EditLastSwitch() {
 	}
 
 	newBoundary := currStart.Add(-total)
-	sess.Segments[segLen-1].End = newBoundary
+	sess.Segments[segLen-2].End = newBoundary
+	sess.Segments[segLen-1].Start = newBoundary
 
 	if err := session.Save(*sess, session.FilePath(now.Format("2006-01-02"))); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Errorf("failed to save edited session: %w", err))
+		fmt.Fprint(os.Stderr, fmt.Errorf("failed to save edited session: %w\n", err))
 		return
 	}
 
-	fmt.Fprintf(os.Stdout, "Shifted last switch back by %s → boundary now at %s", formatDuration(total), newBoundary.Format("15:04"))
+	fmt.Fprintf(os.Stdout, "Shifted last switch back by %s → boundary now at %s\n", session.FormatDuration(total), newBoundary.Format("15:04"))
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	command "github.com/CRSylar/trak/cmd"
+	"github.com/CRSylar/trak/internal/config"
 	"github.com/CRSylar/trak/internal/projects"
 )
 
@@ -17,6 +18,10 @@ func main() {
 	}
 
 	cmd := os.Args[1]
+	if err := config.Load(); err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Errorf("cannot load config file: %w\n", err))
+		os.Exit(1)
+	}
 
 	switch cmd {
 	case "version", "--version", "-v":
@@ -106,6 +111,5 @@ NOTES:
   'rest' is a built-in project always available for breaks.
   Project registrations are saved to ~/.trak/projects.json.
   Session data is saved to sessions_dir (see ~/.trak/config.json) after every switch.
-  If trakd crashes, session data is recovered on next 'trak start'.
-`, version)
+\n`, version)
 }

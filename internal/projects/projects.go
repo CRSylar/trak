@@ -24,6 +24,10 @@ func GetRegisteredProjects() ([]string, error) {
 
 	data, err := os.ReadFile(projPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			defaultProj := defaultProject()
+			return defaultProj.Projects, save(defaultProject(), projPath)
+		}
 		return nil, err
 	}
 
@@ -52,4 +56,23 @@ func SaveProjectConfig(p []string) error {
 		return err
 	}
 	return os.WriteFile(projPath, data, 0644)
+}
+
+func defaultProject() *projectConfig {
+	return &projectConfig{
+		Projects: []string{RestProject},
+	}
+}
+
+func save(p *projectConfig, path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(p, "", " ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0644)
 }
