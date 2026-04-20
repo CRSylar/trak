@@ -59,6 +59,8 @@ func main() {
 		command.Remind()
 	case "install-reminders":
 		command.InstallReminders()
+	case "uninstall-reminders":
+		command.UninstallReminders()
 	case "help", "--help", "-h":
 		printUsage()
 
@@ -94,12 +96,13 @@ USAGE:
   trak version                       Print version
 
 Additional commands:
-		remind <subcommand>:
-			start                Run a reminder check")
-			stop                 Stop reminder notifications")
-			custom <message>     Add a custom reminder")
-			test                 Send a test reminder")
-		install-reminders      Install reminder integration")
+  remind <subcommand>:
+    start                Run a reminder check
+    stop                 Stop reminder notifications
+    custom <message>     Add a custom reminder
+    test                 Send a test reminder
+  install-reminders    Install reminder integration
+  uninstall-reminders Remove reminder integration
 
 DURATION FORMAT (for trak edit):
   15m                    15 minutes
@@ -111,5 +114,6 @@ NOTES:
   'rest' is a built-in project always available for breaks.
   Project registrations are saved to ~/.trak/projects.json.
   Session data is saved to sessions_dir (see ~/.trak/config.json) after every switch.
-\n`, version)
+
+`, version)
 }
