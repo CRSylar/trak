@@ -2,21 +2,15 @@
 
 A minimal CLI time tracker for freelancers. Register projects, switch between them instantly via a hotkey, and get a clean end-of-day report.
 
-Built with Go. No cloud, no accounts, no bloat — just a fast local daemon and two keystrokes.
+Built with Go. No cloud, no accounts, no bloat — just a single binary and two keystrokes.
 
 ---
 
 ## How it works
 
-```
-CLI (trak) ──── unix socket ────► Daemon (trakd)
-                                     holds session state in memory
-                                     checkpoints to disk on every action
-```
+`trak` is a stateless CLI tool — each command reads from and writes to a `session`.json file on disk, each session name is date-based to avoid any guessing.
 
-`trakd` runs in the background for the duration of your workday. `trak` is the CLI you interact with — or don't, once your hotkeys are set up.
-
-State is persisted after every action under the configured `sessions_dir` (default to `~/.trak/sessions/`). If `trakd` crashes mid-day, your data is safe and you'll be offered to resume on next `trak start`.
+State is persisted after every action under the configured `sessions_dir` (default to `~/.trak/sessions/`). Your data is always safe on disk.
 
 *NOTE*
 The `sessions_dir` is configurable in `~/.trak/config.json` and its default is derived from `os.UserHomeDir()`, so the actual path may differ from the literal `~/.trak/sessions` depending on your system.
@@ -31,8 +25,7 @@ Download the latest release for your platform from the [releases page](../../rel
 ```bash
 # example for macOS Apple Silicon
 tar -xzf trak-darwin-arm64.tar.gz
-mv trak-darwin-arm64/trak  ~/.local/bin/trak
-mv trak-darwin-arm64/trakd ~/.local/bin/trakd
+mv trak-darwin-arm64/trak ~/.local/bin/trak
 ```
 
 ### Option 2 — Build from source
@@ -48,11 +41,8 @@ make install        # builds and installs to ~/.local/bin/
 ### Option 3 — go install
 
 ```bash
-go install github.com/CRSylar/trak/cmd/trak@latest
-go install github.com/CRSylar/trak/cmd/trakd@latest
+go install github.com/CRSylar/trak@latest
 ```
-
-> Both binaries are required — `trakd` is the background daemon that `trak` launches automatically.
 
 ### PATH setup
 
@@ -149,18 +139,6 @@ trak status
 trak end
 ```
 
-### Crash recovery
-
-If `trakd` crashes mid-day, your session is safe on disk. On next `trak start`:
-
-```
-⚠️  Unfinished session found — last active: client-alpha (at 11:30)
-Resume it? [y/n]:
-```
-
-`y` — reloads the session and picks up where you left off.
-`n` — closes the old session and starts a fresh one (`2026-03-25-extra.json`).
-
 ### End-of-day report
 
 ```
@@ -183,8 +161,8 @@ Total: 7h 42m  (09:00 → 16:42)
 
 | Command | Description |
 |---|---|
-| `trak start` | Start workday, launch daemon |
-| `trak end` | End workday, print report, stop daemon |
+| `trak start` | Start workday |
+| `trak end` | End workday, print report |
 | `trak next` | Cycle to the next work project (skips rest) |
 | `trak rest` | Switch to rest immediately |
 | `trak switch <n>` | Switch to a specific project |
@@ -194,8 +172,8 @@ Total: 7h 42m  (09:00 → 16:42)
 | `trak register <n>` | Register a new project |
 | `trak unregister <n>` | Remove a project |
 | `trak version` | Print version |
-| `trak remind start` | Remind to start workday if daemon not running |
-| `trak remind stop` | Remind to stop workday if daemon running |
+| `trak remind start` | Remind to start workday if not started |
+| `trak remind stop` | Remind to stop workday if in progress |
 | `trak remind custom <msg>` | Send a custom notification |
 | `trak remind test` | Send a test notification |
 | `trak install-reminders` | Show instructions for scheduled reminders |
@@ -269,7 +247,6 @@ Files with `"closed": true` are finished days. Any file without it (or with `fal
 - `rest` is a built-in project — always available, cannot be unregistered
 - `trak edit` only affects the last switch boundary — closed days are immutable
 - The `trak next` cycle order is alphabetical and excludes `rest`
-- If you need to force-stop the daemon: `pkill trakd`
 
 ---
 

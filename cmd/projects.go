@@ -26,12 +26,10 @@ func CicleNextProject() {
 	}
 
 	cicleIndex := 0
-	if sess.ActiveProject != projects.RestProject {
-		for i, p := range prjs {
-			if p == sess.ActiveProject {
-				cicleIndex = (i + 1) % len(prjs)
-				break
-			}
+	for i, p := range prjs {
+		if p == sess.ActiveProject {
+			cicleIndex = (i + 1) % len(prjs)
+			break
 		}
 	}
 
@@ -39,8 +37,19 @@ func CicleNextProject() {
 		cicleIndex = 0
 	}
 
+	segLen := len(sess.Segments)
+
+	// while clicling, we should not 'store' a Segment if is not the 'cicle target' one
+	// we can add a check to the segment duration, if is less than 2 second we can remove it
+	// this is useful/important 'cause we cannot `trak edit --last` and wipe an entire Segment,
+	// So a 2 second Segment will 'block' the user to edit the previous one
 	sess.ActiveProject = prjs[cicleIndex]
-	sess.Segments[len(sess.Segments)-1].End = now
+	sess.Segments[segLen-1].End = now
+
+	if now.Sub(sess.Segments[segLen-1].Start) < time.Duration(2*time.Second) {
+		sess.Segments = sess.Segments[:segLen-1]
+	}
+
 	sess.Segments = append(sess.Segments, session.Segment{
 		Project: prjs[cicleIndex],
 		Start:   now,

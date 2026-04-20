@@ -5,9 +5,9 @@ GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 
 build:
-	@echo "Building trak and trakd for $(GOOS)/$(GOARCH)..."
+	@echo "Building trak for $(GOOS)/$(GOARCH)..."
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o bin/trak  ./main.go
-	@echo "Done → bin/trak  "
+	@echo "Done → bin/trak"
 
 install: build
 	@echo "Installing to $(BINARY_DIR)..."
